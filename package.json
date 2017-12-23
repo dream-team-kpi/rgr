@@ -1,0 +1,31 @@
+{
+  "name": "rgr",
+  "version": "1.0.0",
+  "description": "Very cool chat!",
+  "main": "chat.js",
+  "scripts": {
+    "start": "node chat.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dream-team-kpi/rgr.git"
+  },
+  "keywords": [
+    "chat",
+    "kpi",
+    "rgr"
+  ],
+  "author": "dream-team-kpi",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dream-team-kpi/rgr/issues"
+  },
+  "homepage": "https://github.com/dream-team-kpi/rgr#readme",
+  "dependencies": {
+    "express": "^4.16.2",
+    "http": "0.0.0",
+    "log4js": "^2.4.1",
+    "mongodb": "^3.0.0-rc0",
+    "socket.io": "^2.0.4"
+  }
+}
