@@ -1,9 +1,47 @@
+var logger = require('log4js').getLogger();
+logger.level = 'debug';
+
+var mongo = require('mongodb').MongoClient;
+var users = null;
+var messages = null;
+
+function userExists(username, callback) {
+    users.find({username: username}).toArray(function(error, list) {
+        if (error) {
+            logger.error(error);
+        } else {
+            callback(list.length > 0);
+        }
+    });
+}
+
+function loginUser(username, password, callback) {
+    userExists(username, function(exists) {
+        if (exists) {
+            users.find({username: username}).toArray(function(error, list) {
+                if (error) {
+                    logger.error(error);
+                    callback(false);
+                } else {
+                    callback(list.pop().password === password);
+                }
+            });
+        } else {
+            users.insert({username: username, password: password}, function(error) {
+                if (error) {
+                    logger.error(error);
+                    callback(false);
+                } else {
+                    callback(true);
+                }
+            });
+        }
+    });
+}
+
 var express = require('express');
 var http = require('http');
 var socket = require('socket.io');
-
-var logger = require('log4js').getLogger();
-logger.level = 'debug';
 
 var app = express();
 var server = http.Server(app);
@@ -16,25 +54,68 @@ app.get('/', function(request, response) {
 });
 
 io.on('connection', function(socket) {
-    var name = (socket.id).toString();
 
-    socket.broadcast.emit('new-user', name);
-    socket.emit('user-name', name);
+    logger.debug(socket.id + ' connected');
 
-    logger.debug(name + ' connected');
+    socket.on('authorize', function(name, password) {
+        loginUser(name, password, function(success) {
+            socket.emit('authorize', success);
 
-    socket.on('send-message', function(message) {
-        io.sockets.emit('recv-message', name, message);
+            if (success) {
+                logger.debug(name + ' logged in with password ' + password);
 
-        logger.debug(name + ' : ' + message);
-    });
+                socket.emit('authorize', name, true);
+                socket.broadcast.emit('user-join', name);
 
-    socket.on('disconnect', function() {
-        logger.debug(name + ' disconnected');
+                socket.on('send-message', function(message) {
+                    socket.broadcast.emit('recv-message', name, message);
+
+                    logger.debug(name + ': ' + message);
+
+                    messages.insert({message: message, from: name}, function(error) {
+                        if (error) {
+                            logger.error(error);
+                        }
+                    });
+                });
+
+                socket.on('load-messages', function() {
+                    messages.find().toArray(function(error, entries) {
+                        if (error) {
+                            logger.error(error);
+                        } else {
+                            logger.debug('Message loaded for user ' + name);
+                            socket.emit('load-messages', entries);
+                        }
+                    });
+                });
+
+                socket.on('disconnect', function() {
+                    io.sockets.emit('user-left', name);
+
+                    logger.debug(name + ' disconnected');
+                });
+            } else {
+                logger.debug(name + ' failed to log in with password ' + password);
+            }
+        });
     });
 });
 
-var port = 3000;
-server.listen(port, function() {
-    logger.debug('Chat server started');
+mongo.connect('mongodb://127.0.0.1:27017', function(error, database) {
+    if (error) {
+        logger.error(error);
+        throw error;
+    } else {
+        logger.debug('Connected to MongoDB');
+
+        var chatdb = database.db('chatdb');
+        users = chatdb.collection('users');
+        messages = chatdb.collection('messages');
+
+        var port = 3000;
+        server.listen(port, function() {
+            logger.debug('Chat server started');
+        });
+    }
 });
