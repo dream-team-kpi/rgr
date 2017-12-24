@@ -1,9 +1,57 @@
+var logger = require('log4js').getLogger();
+logger.level = 'debug';
+
+var mongo = require('mongodb').MongoClient;
+var users = null;
+
+mongo.connect('mongodb://127.0.0.1:27017', function(error, database) {
+    if (error) {
+        logger.error(error);
+    } else {
+        logger.debug('Connected to MongoDB');
+
+        var chatdb = database.db('chatdb');
+        users = chatdb.collection('users');
+    }
+});
+
+function userExists(username, callback) {
+    users.find({username: username}).toArray(function(error, list) {
+        if (error) {
+            logger.error(error);
+        } else {
+            callback(list.length > 0);
+        }
+    });
+}
+
+function loginUser(username, password, callback) {
+    userExists(username, function(exists) {
+        if (exists) {
+            users.find({username: username}).toArray(function(error, list) {
+                if (error) {
+                    logger.error(error);
+                    callback(false);
+                } else {
+                    callback(list.pop().password === password);
+                }
+            });
+        } else {
+            users.insert({username: username, password: password}, function(error) {
+                if (error) {
+                    logger.error(error);
+                    callback(false);
+                } else {
+                    callback(true);
+                }
+            });
+        }
+    });
+}
+
 var express = require('express');
 var http = require('http');
 var socket = require('socket.io');
-
-var logger = require('log4js').getLogger();
-logger.level = 'debug';
 
 var app = express();
 var server = http.Server(app);
@@ -20,19 +68,27 @@ io.on('connection', function(socket) {
     logger.debug(socket.id + ' connected');
 
     socket.on('authorize', function(name, password) {
-        logger.debug(name + ' ' + password);
+        loginUser(name, password, function(success) {
+            socket.emit('authorize', success);
 
-        socket.emit('authorize', true);
-        socket.broadcast.emit('new-user', name);
+            if (success) {
+                logger.debug(name + ' logged in with password ' + password);
 
-        socket.on('send-message', function(message) {
-            io.sockets.emit('recv-message', name, message);
+                socket.emit('authorize', true);
+                socket.broadcast.emit('new-user', name);
 
-            logger.debug(name + ' : ' + message);
-        });
+                socket.on('send-message', function(message) {
+                    io.sockets.emit('recv-message', name, message);
 
-        socket.on('disconnect', function() {
-            logger.debug(name + ' disconnected');
+                    logger.debug(name + ' : ' + message);
+                });
+
+                socket.on('disconnect', function() {
+                    logger.debug(name + ' disconnected');
+                });
+            } else {
+                logger.debug(name + ' failed to log in with password ' + password);
+            }
         });
     });
 });
