@@ -76,7 +76,7 @@ io.on('connection', function(socket) {
             if (success) {
                 logger.debug(name + ' logged in with password ' + password);
 
-                socket.emit('authorize', true);
+                socket.emit('authorize', name, true);
                 socket.broadcast.emit('user-join', name);
 
                 socket.on('send-message', function(message) {
@@ -84,9 +84,20 @@ io.on('connection', function(socket) {
 
                     logger.debug(name + ': ' + message);
 
-                    mesages.insert({message: message, from: name}, function(error) {
+                    messages.insert({message: message, from: name}, function(error) {
                         if (error) {
                             logger.error(error);
+                        }
+                    });
+                });
+
+                socket.on('load-messages', function() {
+                    messages.find().toArray(function(error, entries) {
+                        if (error) {
+                            logger.error(error);
+                        } else {
+                            logger.debug('Message loaded for user ' + name);
+                            socket.emit('load-messages', entries);
                         }
                     });
                 });

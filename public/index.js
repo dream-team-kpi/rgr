@@ -15,17 +15,31 @@ var messageField = $('message-field');
 loginBlock.style.display = "block";
 chatBlock.style.display = "none";
 
-function appendMessage(message) {
+function createListItem(message, callback) {
     if (message.length > 0) {
         var listItem = document.createElement('li');
         var listItemText = document.createTextNode(message);
         listItem.appendChild(listItemText);
-        messageList.appendChild(listItem);
+        callback(listItem);
     }
+}
+
+function appendMessage(message) {
+    createListItem(message, function(listItem) {
+        messageList.appendChild(listItem);
+    });
+}
+
+function insertMessage(message) {
+    createListItem(message, function(listItem) {
+        messageList.insertBefore(listItem, messageList.childNodes[0]);
+    });
 }
 
 var port = 3000;
 var socket = io.connect('http://localhost:' + port);
+
+var currentUsername = null;
 
 loginButton.onclick = function() {
     var username = usernameField.value;
@@ -36,11 +50,14 @@ loginButton.onclick = function() {
     }
 };
 
-socket.on('authorize', function(success) {
+socket.on('authorize', function(username, success) {
     if (success) {
+        currentUsername = username;
         loginBlock.style.display = "none";
         chatBlock.style.display = "block";
         messageField.focus();
+
+        socket.emit('load-messages');
     }
 });
 
@@ -75,4 +92,19 @@ socket.on('user-left', function(name) {
 
 socket.on('recv-message', function(name, message) {
     appendMessage(name + ': ' + message);
+});
+
+socket.on('load-messages', function(entries) {
+    entries.reverse().forEach(function(entry) {
+        var from = null;
+        if (currentUsername === entry.from) {
+            from = 'Me';
+        } else {
+            from = entry.from;
+        }
+
+        insertMessage(from + ': ' + entry.message);
+    });
+
+    window.scrollTo(0, document.body.scrollHeight);
 });
