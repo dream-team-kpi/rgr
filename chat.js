@@ -5,18 +5,6 @@ var mongo = require('mongodb').MongoClient;
 var users = null;
 var messages = null;
 
-mongo.connect('mongodb://127.0.0.1:27017', function(error, database) {
-    if (error) {
-        logger.error(error);
-    } else {
-        logger.debug('Connected to MongoDB');
-
-        var chatdb = database.db('chatdb');
-        users = chatdb.collection('users');
-        messages = chatdb.collection('messages');
-    }
-});
-
 function userExists(username, callback) {
     users.find({username: username}).toArray(function(error, list) {
         if (error) {
@@ -114,7 +102,20 @@ io.on('connection', function(socket) {
     });
 });
 
-var port = 3000;
-server.listen(port, function() {
-    logger.debug('Chat server started');
+mongo.connect('mongodb://127.0.0.1:27017', function(error, database) {
+    if (error) {
+        logger.error(error);
+        throw error;
+    } else {
+        logger.debug('Connected to MongoDB');
+
+        var chatdb = database.db('chatdb');
+        users = chatdb.collection('users');
+        messages = chatdb.collection('messages');
+
+        var port = 3000;
+        server.listen(port, function() {
+            logger.debug('Chat server started');
+        });
+    }
 });
