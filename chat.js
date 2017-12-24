@@ -3,6 +3,7 @@ logger.level = 'debug';
 
 var mongo = require('mongodb').MongoClient;
 var users = null;
+var messages = null;
 
 mongo.connect('mongodb://127.0.0.1:27017', function(error, database) {
     if (error) {
@@ -12,6 +13,7 @@ mongo.connect('mongodb://127.0.0.1:27017', function(error, database) {
 
         var chatdb = database.db('chatdb');
         users = chatdb.collection('users');
+        messages = chatdb.collection('messages');
     }
 });
 
@@ -75,15 +77,23 @@ io.on('connection', function(socket) {
                 logger.debug(name + ' logged in with password ' + password);
 
                 socket.emit('authorize', true);
-                socket.broadcast.emit('new-user', name);
+                socket.broadcast.emit('user-join', name);
 
                 socket.on('send-message', function(message) {
-                    io.sockets.emit('recv-message', name, message);
+                    socket.broadcast.emit('recv-message', name, message);
 
-                    logger.debug(name + ' : ' + message);
+                    logger.debug(name + ': ' + message);
+
+                    mesages.insert({message: message, from: name}, function(error) {
+                        if (error) {
+                            logger.error(error);
+                        }
+                    });
                 });
 
                 socket.on('disconnect', function() {
+                    io.sockets.emit('user-left', name);
+
                     logger.debug(name + ' disconnected');
                 });
             } else {

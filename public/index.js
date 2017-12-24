@@ -8,12 +8,21 @@ var usernameField = $('username-field');
 var passwordField = $('password-field');
 
 var chatBlock = $('chat-block');
-var textArea = $('text-area');
+var messageList = $('message-list');
 var sendButton = $('send-button');
 var messageField = $('message-field');
 
 loginBlock.style.display = "block";
 chatBlock.style.display = "none";
+
+function appendMessage(message) {
+    if (message.length > 0) {
+        var listItem = document.createElement('li');
+        var listItemText = document.createTextNode(message);
+        listItem.appendChild(listItemText);
+        messageList.appendChild(listItem);
+    }
+}
 
 var port = 3000;
 var socket = io.connect('http://localhost:' + port);
@@ -31,18 +40,39 @@ socket.on('authorize', function(success) {
     if (success) {
         loginBlock.style.display = "none";
         chatBlock.style.display = "block";
+        messageField.focus();
     }
 });
 
-sendButton.onclick = function() {
-    socket.emit('send-message', messageField.value);
-    messageField.value = null;
+function sendMessage() {
+    var message = messageField.value;
+    if (message.length > 0) {
+        appendMessage('Me: ' + message);
+        socket.emit('send-message', message);
+
+        messageField.value = null;
+        messageField.focus();
+    }
+}
+
+messageField.onkeydown = function(event) {
+    if (event.which == 13) {
+        sendMessage();
+    }
 };
 
-socket.on('new-user', function(name) {
-    textArea.value +=  name + ' connected\n';
+sendButton.onclick = function() {
+    sendMessage();
+};
+
+socket.on('user-join', function(name) {
+    appendMessage('User ' + name + ' has joined chat!');
+});
+
+socket.on('user-left', function(name) {
+    appendMessage('User ' + name + ' has left chat!');
 });
 
 socket.on('recv-message', function(name, message) {
-    textArea.value += name + ' : ' + message + '\n';
+    appendMessage(name + ': ' + message);
 });
