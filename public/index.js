@@ -2,12 +2,16 @@ var $ = function(id) {
     return document.getElementById(id);
 };
 
-var port = 3000;
-var socket = io.connect('http://localhost:' + port);
-
+var loginBlock = $('login-block');
+var chatBlock = $('chat-block');
 var textArea = $('text-area');
 var sendButton = $('send-button');
 var messageField = $('message-field');
+
+chatBlock.style.display = "none";
+
+var port = 3000;
+var socket = io.connect('http://localhost:' + port);
 
 sendButton.onclick = function() {
     socket.emit('send-message', messageField.value);
