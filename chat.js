@@ -16,21 +16,24 @@ app.get('/', function(request, response) {
 });
 
 io.on('connection', function(socket) {
-    var name = (socket.id).toString();
 
-    socket.broadcast.emit('new-user', name);
-    socket.emit('user-name', name);
+    logger.debug(socket.id + ' connected');
 
-    logger.debug(name + ' connected');
+    socket.on('authorize', function(name, password) {
+        logger.debug(name + ' ' + password);
 
-    socket.on('send-message', function(message) {
-        io.sockets.emit('recv-message', name, message);
+        socket.emit('authorize', true);
+        socket.broadcast.emit('new-user', name);
 
-        logger.debug(name + ' : ' + message);
-    });
+        socket.on('send-message', function(message) {
+            io.sockets.emit('recv-message', name, message);
 
-    socket.on('disconnect', function() {
-        logger.debug(name + ' disconnected');
+            logger.debug(name + ' : ' + message);
+        });
+
+        socket.on('disconnect', function() {
+            logger.debug(name + ' disconnected');
+        });
     });
 });
 
