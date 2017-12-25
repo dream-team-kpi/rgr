@@ -14,6 +14,8 @@ var user2 = {
 };
 
 describe('Chat Server', function() {
+    this.timeout(5000);
+
     it('Should successfully authorize new user', function(done) {
         var client = io.connect(serverURL);
 
