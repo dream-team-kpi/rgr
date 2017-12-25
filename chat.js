@@ -53,6 +53,35 @@ app.get('/', function(request, response) {
     response.sendFile(__dirname + '/index.html');
 });
 
+var backoff = require('backoff');
+
+function loadMessagesForSocket(socket) {
+    var loadMessagesBackoff = backoff.exponential({
+        randomisationFactor: 0.5,
+        initialDelay: 500,
+        maxDelay: 10000,
+    });
+
+    loadMessagesBackoff.on('ready', function() {
+        load();
+    });
+
+    function load() {
+        messages.find().toArray(function(error, entries) {
+            if (!error) {
+                logger.error(error);
+
+                loadMessagesBackoff.backoff();
+            } else {
+                logger.debug('Message loaded for user ' + name);
+                socket.emit('load-messages', entries);
+            }
+        });
+    }
+
+    load();
+}
+
 io.on('connection', function(socket) {
 
     logger.debug(socket.id + ' connected');
@@ -79,14 +108,7 @@ io.on('connection', function(socket) {
                 });
 
                 socket.on('load-messages', function() {
-                    messages.find().toArray(function(error, entries) {
-                        if (error) {
-                            logger.error(error);
-                        } else {
-                            logger.debug('Message loaded for user ' + name);
-                            socket.emit('load-messages', entries);
-                        }
-                    });
+                    loadMessagesForSocket(socket);
                 });
 
                 socket.on('disconnect', function() {
