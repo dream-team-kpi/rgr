@@ -108,7 +108,7 @@ io.on('connection', function(socket) {
     });
 });
 
-mongo.connect('mongodb://127.0.0.1:27017', function(error, database) {
+mongo.connect(process.env.MONGO_URL || 'mongodb://localhost:27017', function(error, database) {
     if (error) {
         logger.error(error);
         throw error;
@@ -119,8 +119,7 @@ mongo.connect('mongodb://127.0.0.1:27017', function(error, database) {
         users = chatdb.collection('users');
         messages = chatdb.collection('messages');
 
-        var port = 3000;
-        server.listen(port, function() {
+        server.listen(process.env.PORT || 3000, function() {
             logger.debug('Chat server started');
         });
     }

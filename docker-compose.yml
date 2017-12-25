@@ -1,0 +1,25 @@
+version: '3'
+services:
+  server:
+    container_name: chat
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile-server
+    ports:
+      - '3000:3000'
+    environment:
+      PORT: 3000
+      MONGO_URL: 'mongodb://mongodb'
+    links:
+      - mongodb
+    depends_on:
+      - mongodb
+
+  mongodb:
+    container_name: mongo
+    image: mongo
+    volumes:
+      - ./data/db:/data/db
+    ports:
+      - '27017:27017'
