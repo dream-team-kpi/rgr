@@ -59,12 +59,11 @@ io.on('connection', function(socket) {
 
     socket.on('authorize', function(name, password) {
         loginUser(name, password, function(success) {
-            socket.emit('authorize', success);
+            socket.emit('authorize', name, success);
 
             if (success) {
                 logger.debug(name + ' logged in with password ' + password);
 
-                socket.emit('authorize', name, true);
                 socket.broadcast.emit('user-join', name);
 
                 socket.on('send-message', function(message) {
