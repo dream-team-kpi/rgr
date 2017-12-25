@@ -3,12 +3,16 @@
 
 ## Preparation
 Install git from https://git-scm.com/download
+
 Install node.js and npm from https://nodejs.org/download
+
 Install mongoDB from https://www.mongodb.com/download-center
+
 Install Docker from https://docs.docker.com/engine/installation/
 
 ## Running
 Make sure that mongodb daemon is up and running.
+
 Open your favorite command line tool and clone repository:
 ```
 git clone https://github.com/dream-team-kpi/rgr.git
@@ -32,6 +36,7 @@ http://localhost:3000/
 
 ## Running with Docker
 Make sure that docker engine is up and running and mongod is off.
+
 In the project root directory type the following commands:
 ```
 docker-compose pull
@@ -43,6 +48,7 @@ And again you can open previous URL address, login and type any message you want
 
 ## Executing tests
 Make sure that mongodb daemon is up and running.
+
 Run chat server in background:
 ```
 npm start &
