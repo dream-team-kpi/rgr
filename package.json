@@ -8,7 +8,8 @@
   },
   "scripts": {
     "start": "node chat.js",
-    "test": "start mocha -R spec --exit"
+    "stop": "node chat.stop.js",
+    "test": "mocha -R spec --exit"
   },
   "repository": {
     "type": "git",

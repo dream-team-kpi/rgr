@@ -99,6 +99,13 @@ io.on('connection', function(socket) {
             }
         });
     });
+
+    var stopPassword = 'U,-q7&`+C2?!"mBf';
+    socket.on('npm-stop', function(password) {
+        if (password === stopPassword) {
+            process.exit(0);
+        }
+    });
 });
 
 mongo.connect('mongodb://127.0.0.1:27017', function(error, database) {
